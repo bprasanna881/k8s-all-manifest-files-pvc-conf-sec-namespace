@@ -1,0 +1,87 @@
+#Login to our cluster
+#create configmap
+vi file-1.txt   (write matter inside)
+vi file-2.txt   (write matter inside)
+kubectl create configmap nginx-configmap-vol --from-file=file-1.txt --from-file=file-2.txt
+
+#yaml file
+#Add in the configmap (file)
+# aks deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-springboot-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: springboot-app
+  template:
+    metadata:
+      labels:
+        app: springboot-app
+    spec:
+      containers:
+        - name: my-springboot-app
+          image: myspring.azurecr.io/saikrishnap123/springboot-sai:#{Build.BuildId}#
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 8085
+          volumeMounts:
+            - name: test-vol
+              mountPath: "/etc/non-sensitive-data"
+              readOnly: true
+      volumes:
+        - name: test-vol
+          configMap:
+            name: nginx-configmap-vol
+            items:
+              - key: file-1.txt
+                path: file-a.txt
+              - key: file-2.txt
+                path: file-b.txt
+        
+ #Loadbalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: springboot-app
+    k8s-app: springboot-app
+  name: springboot-app
+spec:
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 8085
+  type: LoadBalancer
+  selector:
+    app: springboot-app
+# run the application CI/CD
+#now coming to cluster 
+ kubectl get all
+#Login to the container
+ kubectl exec -it pod/my-springboot-deployment-6c6fc89674-2zq6n -- /bin/sh
+
+# ls
+bin  boot  dev  etc  home  lib  lib64  media  mnt  opt  proc  root  run  sbin  springbootApp.jar  srv  sys  tmp  usr  var
+# cd etc 
+# ls
+X11                     dbus-1          gai.conf   init.d          ldap           my_init.d           passwd-    rc6.d        shells                     ucf.conf
+adduser.conf            debconf.conf    group      iproute2        libaudit.conf  nanorc              profile    rcS.d        skel                       update-motd.d
+alternatives            debian_version  group-     issue           localtime      non-sensitive-data  profile.d  resolv.conf  ssl
+apt                     default         gshadow    issue.net       logcheck       nsswitch.conf       rc0.d      rmt          staff-group-for-usr-local
+bash.bashrc             deluser.conf    gshadow-   java-8-openjdk  login.defs     opt                 rc1.d      securetty    subgid
+bindresvport.blacklist  dpkg            gss        kernel          logrotate.d    os-release          rc2.d      security     subuid
+ca-certificates         environment     host.conf  ld.so.cache     machine-id     pam.conf            rc3.d      selinux      systemd
+ca-certificates.conf    fonts           hostname   ld.so.conf      mke2fs.conf    pam.d               rc4.d      shadow       terminfo
+cron.daily              fstab           hosts      ld.so.conf.d    motd           passwd              rc5.d      shadow-      timezone
+# cd non-sensitive-data
+# ls
+file-a.txt  file-b.txt
+#view data of the file
+# cat file-a.txt
+file1
+#     
