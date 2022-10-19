@@ -1,0 +1,93 @@
+predefind requests in cluster create namespace ,service connection with name space
+
+# create namespace in cluster 
+1.kubectl create namespace dev
+2.service connection 
+
+Authentication method
+KubeConfig
+Service Account
+Azure Subscription
+Azure Subscription
+Free Trial (efb7ebbe-f7ee-4dbb-9b1c-d3c069c3ebb2)
+Cluster
+aks-pvc (aks)
+Namespace
+dev
+Use cluster admin credentials
+Create new service account
+Details
+Service connection name
+k8sdev
+Description (optional)
+Security
+Grant access permission to all pipelines
+Learn moreTroubleshoot
+
+# 3.manifest file
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-springboot-deployment
+  namespace : dev
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: springboot-app
+  template:
+    metadata:
+      labels:
+        app: springboot-app
+    spec:
+      containers:
+      - name: my-springboot-app
+        image: akspvc.azurecr.io/bprasanna881/spring-aks:#{Build.BuildId}#
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8085
+        volumeMounts:
+            - mountPath: /test-pd
+              name: test-volume
+      volumes:
+      - name: test-volume
+        persistentVolumeClaim:
+          claimName: my-disk-claim-1     
+---
+# service type loadbalancer
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: springboot-app
+    k8s-app: springboot-app
+  name: springboot-app
+  namespace : dev
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 8085
+  type: LoadBalancer
+  selector:
+    app: springboot-app
+---
+#pvc provisioning
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-disk-claim-1
+  namespace : dev
+  labels:
+    app: springboot-app
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: default
+  resources:
+    requests:
+      storage: 20Gi
+once pipeline sucess type below commands
+# kubectl get all -n dev
