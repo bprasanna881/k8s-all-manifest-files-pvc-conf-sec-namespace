@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-springboot-deployment
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: springboot-app
+  template:
+    metadata:
+      labels:
+        app: springboot-app
+    spec:
+      containers:
+      - name: my-springboot-app
+        image: akspvc.azurecr.io/bprasanna881/spring-aks:#{Build.BuildId}#
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8085
+        env:
+          - name: SECRET_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: mysecret
+                key: username 
+          - name: SECRET_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysecret
+                key: password        
+---
+# service type loadbalancer
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: springboot-app
+    k8s-app: springboot-app
+  name: springboot-app
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 8085
+  type: LoadBalancer
+  selector:
+    app: springboot-app
+---
+# secrets
+apiVersion: v1
+kind: Secret 
+metadata:
+  name: mysecret
+type: Opaque
+data:
+  username: YWRtaW4=
+  password: MWYyZDFlMmU2N2Rm
+  
+come to cluster kubectl get all 
+$ kubectl exec my-springboot-deployment-779666bb47-2f29k env | grep SECRET        enter this command
+SECRET_USERNAME=admin
+SECRET_PASSWORD=1f2d1e2e67df
